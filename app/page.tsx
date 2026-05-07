@@ -11,29 +11,30 @@ import "@aws-amplify/ui-react/styles.css";
 
 Amplify.configure(outputs);
 
-const client = generateClient<Schema>();
+const client = generateClient<Schema>({
+  authMode: "userPool"
+});
 
 export default function App() {
   const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
 
-const {user,signOut} = useAuthenticator()
+  const { user, signOut } = useAuthenticator();
 
   function deleteTodo(id: string) {
     client.models.Todo.delete({ id });
   }
-  function listTodos() {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
-    });
-  }
 
   useEffect(() => {
-    listTodos();
+    const sub = client.models.Todo.observeQuery().subscribe({
+      next: (data) => setTodos([...data.items]),
+    });
+    return () => sub.unsubscribe();
   }, []);
 
-  function createTodo() {
-    client.models.Todo.create({
-      content: window.prompt("Todo content"),
+  async function createTodo() {
+    await client.models.Todo.create({
+      content: window.prompt("Todo content?"),
+      isDone: false,
     });
   }
 
@@ -55,7 +56,6 @@ const {user,signOut} = useAuthenticator()
           Review next steps of this tutorial.
         </a>
       </div>
-
 
       <button onClick={signOut}>Sign out</button>
     </main>
